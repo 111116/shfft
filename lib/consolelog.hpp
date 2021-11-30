@@ -166,7 +166,7 @@ inline void ConsoleLogger::timeLog(const std::string& label)
 	auto now = std::chrono::system_clock::now();
 	std::chrono::duration<double> seconds = now - starttimes[label];
 	if (loglevel <= 0)
-		out << "    "+label+": " << (long long)(seconds.count()*1000)/1000 << "s" << std::endl;
+		out << "    "+label+": " << (long long)(seconds.count()*1000000)/1000 << "ms" << std::endl;
 	mtx.unlock();
 }
 
@@ -181,7 +181,7 @@ inline void ConsoleLogger::timeEnd(const std::string& label)
 	auto now = std::chrono::system_clock::now();
 	std::chrono::duration<double> seconds = now - starttimes[label];
 	if (loglevel <= 0)
-		out << "    "+label+": " << 0.001*round(seconds.count()*1000) << "s - timer ended" << std::endl;
+		out << "    "+label+": " << 0.001*round(seconds.count()*1000000) << "ms - timer ended" << std::endl;
 	starttimes.erase(label);
 	mtx.unlock();
 }

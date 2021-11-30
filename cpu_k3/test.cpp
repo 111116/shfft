@@ -4,7 +4,7 @@
 #include "fastmul.hpp"
 #include "sh.hpp"
 #include "shproduct.hpp"
-#include "consolelog.hpp"
+#include "lib/consolelog.hpp"
 #include "shorder.hpp"
 
 FourierSeries<n> sh2fs(SH<n> sh)

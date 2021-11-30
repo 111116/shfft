@@ -1,3 +1,5 @@
 .DS_Store
 cpu_*/precompute
 cpu_*/test
+cpu_*/sh2fs.cpp
+cpu_*/fs2sh.cpp
