@@ -1,1 +1,3 @@
 .DS_Store
+cpu_*/precompute
+cpu_*/test
