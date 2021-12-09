@@ -1,14 +1,13 @@
 #include <cufft.h>
-#include <chrono> // time
 #include "shorder.hpp"
 #include "select_size.hpp"
 
 // DFT size: N*N
-constexpr int N = select_size_3(n);
+constexpr int N = select_size_5(n);
 
 // convert from n*n SH vector to coefficients of Fourier Series
 // placed at lower-most corner in the N*N array
-__global__ void cu_sh1_fs3(float* SH, cufftComplex* FS)
+__global__ void cu_sh1_fs5(float* SH, cufftComplex* FS)
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     const int shbase = i*n*n;
@@ -19,14 +18,14 @@ __global__ void cu_sh1_fs3(float* SH, cufftComplex* FS)
     memcpy(SHreg, SH+shbase, n*n*sizeof(float));
     memset(FSreg, 0, N*N*sizeof(cufftComplex));
     // execute
-    #include "generated/sh1_fs3.cu"
+    #include "generated/sh1_fs5.cu"
     // copy back to global memory
    	for (int j=0; j<N*N; ++j)
    		FS[j+i*N*N] = FSreg[j];
 }
 
 // convert from coefficients of Fourier Series to SH vector
-__global__ void cu_fs3_sh1(cufftComplex* FS, float* SH)
+__global__ void cu_fs5_sh1(cufftComplex* FS, float* SH)
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     const int shbase = i*n*n;
@@ -38,7 +37,7 @@ __global__ void cu_fs3_sh1(cufftComplex* FS, float* SH)
    	for (int j=0; j<N*N; ++j)
    		FSreg[j] = FS[j+i*N*N];
     // execute
-    #include "generated/fs3_sh1.cu"
+    #include "generated/fs5_sh1.cu"
     // copy back to global memory
     memcpy(SH+shbase, SHreg, n*n*sizeof(float));
 }
@@ -55,8 +54,10 @@ __global__ void multiply(cufftComplex* A, cufftComplex* B)
 
 // A, B, C are pointers to SH coefficients in device memory
 // layout: SH_0 [ at(0,0), at(1,-1), at(1,0), ... ], SH_1, ...
-void shprod_many(float* A, float* B, float* C, float* D)
+void shprod_many(float* A, float* B, float* C, float* D, float* E, float* F)
 {
+	auto t0 = std::chrono::system_clock::now();
+	auto t1 = std::chrono::system_clock::now();
 	const int blocksize = 32;
 	assert(num%blocksize == 0);
 	// mem alloc
@@ -70,21 +71,27 @@ void shprod_many(float* A, float* B, float* C, float* D)
 	cufftPlanMany(&plan, 2, sizes, NULL, 1, N*N, NULL, 1, N*N, CUFFT_C2C, num);
     console.time("ours");
 	// DFT on A
-	cu_sh1_fs3<<<num/blocksize, blocksize>>>(A, pool0);
+	cu_sh1_fs5<<<num/blocksize, blocksize>>>(A, pool0);
 	cufftExecC2C(plan, pool0, pool1, CUFFT_FORWARD);
-	// DFT on B
-	cu_sh1_fs3<<<num/blocksize, blocksize>>>(B, pool0);
+	// DFT on B & multiply
+	cu_sh1_fs5<<<num/blocksize, blocksize>>>(B, pool0);
 	cufftExecC2C(plan, pool0, pool2, CUFFT_FORWARD);
-	// element-wise multiply
 	multiply<<<num*N*N/blocksize, blocksize>>>(pool1, pool2);
-	// DFT on C
-	cu_sh1_fs3<<<num/blocksize, blocksize>>>(C, pool0);
+	// DFT on C & multiply
+	cu_sh1_fs5<<<num/blocksize, blocksize>>>(C, pool0);
 	cufftExecC2C(plan, pool0, pool1, CUFFT_FORWARD);
-	// element-wise multiply
+	multiply<<<num*N*N/blocksize, blocksize>>>(pool1, pool2);
+	// DFT on D & multiply
+	cu_sh1_fs5<<<num/blocksize, blocksize>>>(D, pool0);
+	cufftExecC2C(plan, pool0, pool1, CUFFT_FORWARD);
+	multiply<<<num*N*N/blocksize, blocksize>>>(pool1, pool2);
+	// DFT on E & multiply
+	cu_sh1_fs5<<<num/blocksize, blocksize>>>(E, pool0);
+	cufftExecC2C(plan, pool0, pool1, CUFFT_FORWARD);
 	multiply<<<num*N*N/blocksize, blocksize>>>(pool1, pool2);
 	// IDFT & convert backs to SH
 	cufftExecC2C(plan, pool2, pool1, CUFFT_INVERSE);
-	cu_fs3_sh1<<<num/blocksize, blocksize>>>(pool1, D);
+	cu_fs5_sh1<<<num/blocksize, blocksize>>>(pool1, F);
 	// synchronize
 	cudaDeviceSynchronize();
     console.timeEnd("ours");
