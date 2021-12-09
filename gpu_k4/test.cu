@@ -268,33 +268,20 @@ int main(int argc, char* argv[])
     dim3 block(blocksize,1);
 
     // run conventional
-    console.info("conventional (approximate):");
-    console.time("run " + std::to_string(num));
+    console.time("trad");
     shprod_conventional<<<grid, block>>>(A,B,C,D);
     cudaDeviceSynchronize();
-    console.timeEnd("run " + std::to_string(num));
+    console.timeEnd("trad");
     // validate
     validate(A,B,C,D);
     // clear result
     curandGenerateUniform(curand, D, num * n*n);
-
-    // run conventional precise
-    console.info("conventional (precise):");
-    console.time("run " + std::to_string(num));
-    shprod_conventional_precise<<<grid, block>>>(A,B,C,D);
-    cudaDeviceSynchronize();
-    console.timeEnd("run " + std::to_string(num));
-    // validate
-    validate(A,B,C,D);
-    // clear result
-    curandGenerateUniform(curand, D, num * n*n);
-
     releaseGamma();
+
     // run ours
-    console.info("ours:");
-    console.time("run " + std::to_string(num));
+    console.time("ours + planning");
     shprod_many(A,B,C,D);
-    console.timeEnd("run " + std::to_string(num));
+    console.timeEnd("ours + planning");
     gpuErrchk( cudaPeekAtLastError() );
     // validate
     validate(A,B,C,D);

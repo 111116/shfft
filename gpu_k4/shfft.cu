@@ -57,9 +57,6 @@ __global__ void multiply(cufftComplex* A, cufftComplex* B)
 // layout: SH_0 [ at(0,0), at(1,-1), at(1,0), ... ], SH_1, ...
 void shprod_many(float* A, float* B, float* C, float* D)
 {
-	auto t0 = std::chrono::system_clock::now();
-	auto t1 = std::chrono::system_clock::now();
-	double dt = 0;
 	const int blocksize = 32;
 	assert(num%blocksize == 0);
 	// mem alloc
@@ -71,33 +68,24 @@ void shprod_many(float* A, float* B, float* C, float* D)
 	cufftHandle plan;
 	int sizes[2] = {N,N};
 	cufftPlanMany(&plan, 2, sizes, NULL, 1, N*N, NULL, 1, N*N, CUFFT_C2C, num);
-    console.time("exclude_planning " + std::to_string(num));
+    console.time("ours");
 	// DFT on A
 	cu_sh1_fs3<<<num/blocksize, blocksize>>>(A, pool0);
-#define STARTTIME {cudaDeviceSynchronize(); t0 = std::chrono::system_clock::now();}
-#define ENDTIME {cudaDeviceSynchronize(); t1 = std::chrono::system_clock::now(); dt += std::chrono::duration<double>(t1-t0).count()*1000;}
-STARTTIME
 	cufftExecC2C(plan, pool0, pool1, CUFFT_FORWARD);
-ENDTIME
 	// DFT on B
 	cu_sh1_fs3<<<num/blocksize, blocksize>>>(B, pool0);
-STARTTIME
 	cufftExecC2C(plan, pool0, pool2, CUFFT_FORWARD);
 	// element-wise multiply
 	multiply<<<num*N*N/blocksize, blocksize>>>(pool1, pool2);
-ENDTIME
 	// DFT on C
 	cu_sh1_fs3<<<num/blocksize, blocksize>>>(C, pool0);
-STARTTIME
 	cufftExecC2C(plan, pool0, pool1, CUFFT_FORWARD);
 	// element-wise multiply
 	multiply<<<num*N*N/blocksize, blocksize>>>(pool1, pool2);
 	// IDFT & convert backs to SH
 	cufftExecC2C(plan, pool2, pool1, CUFFT_INVERSE);
-ENDTIME
 	cu_fs3_sh1<<<num/blocksize, blocksize>>>(pool1, D);
 	// synchronize
 	cudaDeviceSynchronize();
-	console.log("fftexec:", dt);
-    console.timeEnd("exclude_planning " + std::to_string(num));
+    console.timeEnd("ours");
 }
