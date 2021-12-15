@@ -30,7 +30,4 @@ make
 - `gpu_k*`: Our GPU-version benchmarking program. 𝒏 is determined at compile time; 𝒌 is fixed.
 - `gamma_bin`: precomputed SH tripling tensor used by the traditional method.
 
-[TODO] clean up precomputed results.
-
 In `cpu_general`, precomputation of our algorithm is done at runtime. In `cpu_k*`, `gpu_k*`, precomputation of our algorithm is done when building the program. 
-
