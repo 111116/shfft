@@ -23,3 +23,14 @@ make
 ./test
 ```
 
+## Directory Structure
+
+- `cpu_general`: Our program demonstrating the proposed algorithm. 𝒏 and 𝒌 is determined at runtime.
+- `cpu_k*`: Our CPU-version benchmarking program. 𝒏 is determined at compile time; 𝒌 is fixed.
+- `gpu_k*`: Our GPU-version benchmarking program. 𝒏 is determined at compile time; 𝒌 is fixed.
+- `gamma_bin`: precomputed SH tripling tensor used by the traditional method.
+
+[TODO] clean up precomputed results.
+
+In `cpu_general`, precomputation of our algorithm is done at runtime. In `cpu_k*`, `gpu_k*`, precomputation of our algorithm is done when building the program. 
+
