@@ -3,7 +3,6 @@
 
 #include <complex>
 #include <vector>
-// #include <iosfwd>
 
 template <typename T>
 struct FourierSeries
@@ -134,16 +133,4 @@ FourierSeries<T> pow (const FourierSeries<T>& a, int k)
 	return prod;
 }
 
-// std::ostream& operator<< (std::ostream& out, const FourierSeries& fs)
-// {
-// 	out << "[FS] ";
-// 	bool comma = false;
-// 	for (int i=-n+1; i<n; ++i)
-// 	for (int j=-n+1; j<n; ++j)
-// 		if (fs.at(i,j) != complex(0)) {
-// 			if (comma) out << ", ";
-// 			out << "(" << i << "," << j << ")->" << fs.at(i,j);
-// 		}
-// 	return out;	
-// }
 

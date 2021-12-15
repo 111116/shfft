@@ -1,7 +1,10 @@
-// This program is a proof-of-concept demonstration of computing SH products
+// Note: performance of this demo may be sub-optimal.
+
+// This program is a demonstration of computing SH products
 // with arbitary k value, using the divide-and-conquer strategy. To obtain
 // better performance, order of computation may be arranged with care,
 // especially for small fixed k value.
+
 
 #include <iostream>
 #include <cmath>
@@ -85,7 +88,7 @@ int main()
 {
     // n: order of SH (i.e. n^2 coefficients each SH)
     // Result is (k-1) SH functions multiplied, reprojected onto n-th SH basis.
-    int n=4, k=10;
+    int n=4, k=7;
     // Note: n and k can be assigned arbitarily at runtime.
     //       Here we demonstrate runtime precomputation.
     //       Performance of this demo may be suboptimal.

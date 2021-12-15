@@ -1,58 +1,11 @@
+// Note: performance of this demo may be sub-optimal.
+// Here we use a naive divide-and-conquer strategy to compute product of multiple input Fourier series.
+// The strategy can be significantly optimized by, for example, rearranging multiplications to reduce conversions from one size to another
 #pragma once
 
 #include <fftw3.h>
 #include "fourierseries.hpp"
 #include "select_size.hpp"
-
-// EXPLANATION
-// multiplication of two 2D Fourier series can be viewed as 2D convolution,
-// which can be done with 2D FFT, with a complexity of O(n^2 log n)
-
-// Here we use a naive divide-and-conquer strategy to compute product of multiple inputs.
-// The strategy can be significantly optimized by, for example, rearranging multiplications to reduce conversions from one size to another
-
-// template <int n>
-// FourierSeries<2*n-1> fastmul (FourierSeries<n> a, FourierSeries<n> b)
-// {
-//     // startup initialization
-//     static const int N = select_size(n);
-//     static const int M = 2*n-1;
-//     static fftwf_complex* const pool0 = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N*N);
-//     static fftwf_complex* const poolT = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N*N);
-//     static fftwf_complex* const pool1 = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N*N);
-//     static fftwf_complex* const pool2 = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N*N);
-//     static fftwf_plan p1_1 = fftwf_plan_many_dft(1, &N, M, pool0, NULL, 1, N, poolT, NULL, 1, N, FFTW_FORWARD, FFTW_MEASURE);
-//     static fftwf_plan p1_2 = fftwf_plan_many_dft(1, &N, N, poolT, NULL, N, 1, pool1, NULL, N, 1, FFTW_FORWARD, FFTW_MEASURE);
-//     static fftwf_plan p2_1 = fftwf_plan_many_dft(1, &N, M, pool0, NULL, 1, N, poolT, NULL, 1, N, FFTW_FORWARD, FFTW_MEASURE);
-//     static fftwf_plan p2_2 = fftwf_plan_many_dft(1, &N, N, poolT, NULL, N, 1, pool2, NULL, N, 1, FFTW_FORWARD, FFTW_MEASURE);
-//     static fftwf_plan p3_1 = fftwf_plan_many_dft(1, &N, N, pool1, NULL, 1, N, pool2, NULL, 1, N, FFTW_BACKWARD, FFTW_MEASURE);
-//     // in result we only need column [n-1, 2n-1)
-//     static fftwf_plan p3_2 = fftwf_plan_many_dft(1, &N, n, pool2+n-1, NULL, N, 1, pool2+n-1, NULL, N, 1, FFTW_BACKWARD, FFTW_MEASURE);
-//     static void* init0once = memset(pool0, 0, N*N*sizeof(fftwf_complex));
-//     static void* initTonce = memset(poolT, 0, N*N*sizeof(fftwf_complex));
-//     // DFT on coefficients of a
-//     for (int i=0; i<2*n-1; ++i)
-//         memcpy(pool0+i*N, a.a[i], (2*n-1)*sizeof(fftwf_complex));
-//     fftwf_execute(p1_1);
-//     fftwf_execute(p1_2);
-//     // DFT on coefficients of b, multiplied by coefficient 1/N^2
-//     for (int i=0; i<2*n-1; ++i)
-//         for (int j=0; j<2*n-1; ++j)
-//             *reinterpret_cast<complex*>(pool0+i*N+j) = 1.0f/(N*N) * b.a[i][j];
-//     fftwf_execute(p2_1);
-//     fftwf_execute(p2_2);
-//     // do multiply
-//     for (int i=0; i<N*N; ++i)
-//         *reinterpret_cast<complex*>(pool1+i) *= *reinterpret_cast<complex*>(pool2+i);
-//     // IDFT
-//     fftwf_execute(p3_1);
-//     fftwf_execute(p3_2);
-//     // extract final values
-//     FourierSeries<2*n-1> c;
-//     for (int i=0; i<4*n-3; ++i)
-//         memcpy(c.a[i]+n-1, pool2+i*N+n-1, n*sizeof(fftwf_complex));
-//     return c;
-// }
 
 // to change float to double, substitute fftwf_ to fftw_
 FourierSeries<float> prod_divide_and_conquer(std::vector<FourierSeries<float>> inputs)
@@ -117,7 +70,9 @@ FourierSeries<float> prod_divide_and_conquer(std::vector<FourierSeries<float>> i
     };
     auto multiply = [&](int layer, int dest) // pool[layer+1] = pool[layer][0] x pool[layer][1]
     {
-        // promote the size of input data, then run DFT to get point values
+        // multiplication of two 2D Fourier series can be viewed as 2D convolution,
+        // which can be done with 2D FFT, with a complexity of O(n^2 log n).
+        // first promote the size of input data, then run DFT to get point values
         copy_square_data(pool[layer][0], fftsize[layer], pool_tmp[layer+1][0], fftsize[layer+1]);
         copy_square_data(pool[layer][1], fftsize[layer], pool_tmp[layer+1][1], fftsize[layer+1]);
         fftwf_execute(fft_plan_forward[layer][0]);
@@ -128,9 +83,6 @@ FourierSeries<float> prod_divide_and_conquer(std::vector<FourierSeries<float>> i
             *reinterpret_cast<data_t*>(pool_tmp_pv[layer+1][0]+i) *= 1.f/(N*N) * *reinterpret_cast<data_t*>(pool_tmp_pv[layer+1][1]+i);
         // IDFT
         fftwf_execute(fft_plan_inverse[layer][dest]);
-        // console.log("--", reinterpret_cast<data_t>(*(pool[layer][0])));
-        // console.log("--", reinterpret_cast<data_t>(*(pool[layer][1])));
-        // console.log("--", reinterpret_cast<data_t>(*(pool[layer+1][0])));
     };
     auto copy_from_input = [copy_square_data](FourierSeries<float> const& input, fftwf_complex* pool, int dst_size)
     {
