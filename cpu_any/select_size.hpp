@@ -1,3 +1,4 @@
+// This file records tested optimal FFT size above a certain given size, up to 139
 #pragma once
 
 
@@ -8,11 +9,7 @@ constexpr int best_fftsize_above[] = {
 99,99,99,105,105,105,105,105,105,108,108,108,110,110,112,112,
 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
 135,135,135,135,135,135,135,136,138,138,139};
+
 constexpr int bestfftsize(int N) {
 	return (N < 140)? best_fftsize_above[N]: N;
-}
-
-constexpr int select_size_3(int n)
-{
-	return bestfftsize(6*n-5);
 }
