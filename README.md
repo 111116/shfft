@@ -41,3 +41,16 @@ The second step, 2D convolution, can be accelarated using FFT. We here use the I
 
 The first and third step are essentially sparse linear transforms, of which coefficients can be precomputed. In `cpu_general`, precomputation of our algorithm is done at runtime. In `cpu_k*`, `gpu_k*`, precomputation of our algorithm is done when building the program. 
 
+## Cite Paper
+
+```plain
+@article{Xin2021FastAA,
+  title={Fast and accurate spherical harmonics products},
+  author={Hanggao Xin and Zhiqian Zhou and Di An and Ling-Qi Yan and Kun Xu and Shi-Min Hu and Shing-Tung Yau},
+  journal={ACM Transactions on Graphics (TOG)},
+  year={2021},
+  volume={40},
+  pages={1 - 14}
+}
+```
+
